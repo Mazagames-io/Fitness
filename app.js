@@ -8,6 +8,8 @@ let state = {
     currentTab: 'dashboard'
 };
 
+const AUTO_SENSITIVITY = 1.8;
+
 // Utilities
 const saveState = () => localStorage.setItem(STORE_KEY, JSON.stringify(state));
 const loadState = () => {
@@ -56,6 +58,20 @@ const init = () => {
         onboarding.classList.remove('hidden');
     } else {
         renderDashboard();
+    }
+
+    // Request Motion Permissions by default (if already granted or on first interaction)
+    // Note: iOS requires a user gesture, so we'll also keep it in startWalking
+    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+        // We can't auto-request on page load without a gesture, 
+        // but we'll setup a one-time listener for the first click
+        const requestMotion = async () => {
+            try {
+                await DeviceMotionEvent.requestPermission();
+                window.removeEventListener('click', requestMotion);
+            } catch (e) { console.error(e); }
+        };
+        window.addEventListener('click', requestMotion);
     }
 
     // Setup Tab Listeners
@@ -299,39 +315,51 @@ const renderProgress = () => {
 // Walking Tracker Logic
 let walkInterval = null;
 let lastPosition = null;
-let totalDistance = 0;
+let totalDistance = 0; // Cumulative distance
+let gpsDistance = 0;   // Distance tracked via GPS
 let totalSteps = 0;
 let startTime = null;
 let watchId = null;
+let isOutdoor = false;
 
 // Motion Step Counting
-let lastAccel = 0;
+let rollingAverage = 9.8;
+const alpha = 0.1; // smoothing factor
 let isStepInProgress = false;
-const STEP_THRESHOLD = 2.0; // Acceleration threshold for a step
 const STEP_COOLDOWN = 300; // ms between steps
 let lastStepTime = 0;
 
 const handleMotion = (event) => {
     const accel = event.accelerationIncludingGravity;
-    if (!accel) return;
+    if (!accel || !accel.x) return;
 
     // Magnitude of acceleration
     const magnitude = Math.sqrt(accel.x ** 2 + accel.y ** 2 + accel.z ** 2);
-    const delta = Math.abs(magnitude - lastAccel);
-    lastAccel = magnitude;
 
+    // Smooth the magnitude to track "gravity" vs "user movement"
+    rollingAverage = (alpha * magnitude) + ((1 - alpha) * rollingAverage);
+
+    // The "Peak" is the difference between current magnitude and the rolling average
+    const delta = magnitude - rollingAverage;
     const now = Date.now();
-    if (delta > STEP_THRESHOLD && !isStepInProgress && (now - lastStepTime) > STEP_COOLDOWN) {
+
+    // Use AUTO_SENSITIVITY as the threshold
+    if (delta > AUTO_SENSITIVITY && !isStepInProgress && (now - lastStepTime) > STEP_COOLDOWN) {
         totalSteps++;
         isStepInProgress = true;
         lastStepTime = now;
 
-        // Calculate distance from steps (Stride length approx 41.5% of height)
+        // Sensor distance is always used as a fallback or for indoor movement
         const strideLength = (state.user?.height || 170) * 0.415 / 100; // in meters
-        totalDistance += strideLength / 1000; // convert to km
+        const stepDist = strideLength / 1000;
+
+        // If GPS is not active or not outdoor, use steps for total distance
+        if (!isOutdoor || !lastPosition) {
+            totalDistance += stepDist;
+        }
 
         updateWalkUI();
-    } else if (delta < STEP_THRESHOLD / 2) {
+    } else if (delta < AUTO_SENSITIVITY / 2) {
         isStepInProgress = false;
     }
 };
@@ -366,19 +394,21 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 
 const startWalking = async () => {
     // Request Motion Permissions (Required for iOS)
-    if (typeof DeviceMotionEvent.requestPermission === 'function') {
+    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
         try {
             const permissionState = await DeviceMotionEvent.requestPermission();
             if (permissionState !== 'granted') {
-                alert("Motion sensor permission is required for indoor tracking.");
+                alert("Motion sensor permission is required for accurate step counting.");
                 return;
             }
-        } catch (error) {
-            console.error(error);
-        }
+        } catch (error) { console.error(error); }
     }
 
+    // Ask if Outdoor (to use GPS)
+    isOutdoor = confirm("Is this an outdoor walk? (Enables GPS for route and distance)");
+
     totalDistance = 0;
+    gpsDistance = 0;
     totalSteps = 0;
     startTime = Date.now();
     lastPosition = null;
@@ -386,25 +416,29 @@ const startWalking = async () => {
     startBtn.classList.add('hidden');
     stopBtn.classList.remove('hidden');
 
-    // Hybrid Tracking: Sensors for steps (Indoor) + GPS for range (Outdoor)
+    // Primary: Motion sensors for steps
     window.addEventListener('devicemotion', handleMotion);
 
-    if (navigator.geolocation) {
+    // Optional: GPS for distance (only if outdoor)
+    if (isOutdoor && navigator.geolocation) {
         watchId = navigator.geolocation.watchPosition((pos) => {
             const { latitude, longitude, accuracy } = pos.coords;
             if (accuracy > 30) return;
 
             if (lastPosition) {
                 const d = calculateDistance(lastPosition.lat, lastPosition.lng, latitude, longitude);
-                // If GPS distance is significantly more than sensor distance, trust GPS (Outdoor)
-                // If not, sensor distance handles small indoor movements
-                if (d > 0.005) {
-                    // This is a simplified hybrid approach
-                    // We don't double count; we just use the most accurate one
+                if (d > 0.005) { // Significant movement
+                    gpsDistance += d;
+                    // For outdoor, trust GPS distance over step-estimation
+                    totalDistance = gpsDistance;
                 }
             }
             lastPosition = { lat: latitude, lng: longitude };
-        }, (err) => console.error(err), { enableHighAccuracy: true });
+        }, (err) => {
+            console.error(err);
+            alert("GPS signal lost. Falling back to step-based distance.");
+            isOutdoor = false;
+        }, { enableHighAccuracy: true });
     }
 
     walkInterval = setInterval(updateWalkUI, 1000);
