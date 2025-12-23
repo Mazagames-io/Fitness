@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FitTrack - Personal Fitness Companion</title>
+    <meta name="description"
+        content="Personal weight tracking and walking activity tracker. Offline-first, simple and clean.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="app">
+        <!-- Onboarding Overlay -->
+        <div id="onboarding" class="modal hidden">
+            <div class="modal-content">
+                <h1>Welcome to FitTrack</h1>
+                <p>Let's set up your profile to get started.</p>
+                <form id="onboarding-form">
+                    <div class="form-group">
+                        <label for="name">Name</label>
+                        <input type="text" id="name" required placeholder="Enter your name">
+                    </div>
+                    <div class="form-group">
+                        <label for="dob">Date of Birth</label>
+                        <input type="date" id="dob" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="height">Height (cm)</label>
+                        <input type="number" id="height" required placeholder="175">
+                    </div>
+                    <div class="form-group">
+                        <label for="current-weight">Current Weight (kg)</label>
+                        <input type="number" step="0.1" id="current-weight" required placeholder="70.0">
+                    </div>
+                    <div class="form-group">
+                        <label for="target-weight">Target Weight (kg)</label>
+                        <input type="number" step="0.1" id="target-weight" required placeholder="65.0">
+                    </div>
+                    <div class="form-group">
+                        <label for="pace">Preferred Pace</label>
+                        <select id="pace">
+                            <option value="slow">Slow & Steady</option>
+                            <option value="steady" selected>Steady Progress</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-primary">Complete Setup</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <header>
+            <div class="header-content">
+                <h1 id="user-greeting">Hi, User</h1>
+                <p id="today-date"></p>
+            </div>
+            <button id="reset-data" class="btn-icon" title="Reset Data"><i data-lucide="refresh-ccw"></i></button>
+        </header>
+
+        <main id="tab-content">
+            <!-- Tabs will be rendered here -->
+            <section id="dashboard-tab" class="tab-page">
+                <div class="stats-grid">
+                    <div class="stat-card primary">
+                        <i data-lucide="scale"></i>
+                        <div class="stat-info">
+                            <span class="label">Current Weight</span>
+                            <span class="value" id="dash-weight">-- kg</span>
+                        </div>
+                    </div>
+                    <div class="stat-card secondary">
+                        <i data-lucide="activity"></i>
+                        <div class="stat-info">
+                            <span class="label">BMI</span>
+                            <span class="value" id="dash-bmi">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="goal-card">
+                    <h3>Goal Status</h3>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="goal-progress"></div>
+                    </div>
+                    <p id="goal-feedback">Set a goal to see progress!</p>
+                    <p id="estimated-time" class="subtext"></p>
+                </div>
+
+                <div class="quick-log">
+                    <h3>Today's Activity</h3>
+                    <div class="activity-row">
+                        <div class="activity-item">
+                            <i data-lucide="footprints"></i>
+                            <span id="dash-distance">0.00 km</span>
+                        </div>
+                        <div class="activity-item">
+                            <i data-lucide="timer"></i>
+                            <span id="dash-time">0m</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="log-tab" class="tab-page hidden">
+                <div class="card">
+                    <h2>Log Weight</h2>
+                    <form id="weight-log-form">
+                        <div class="form-group">
+                            <label for="log-weight">Weight (kg)</label>
+                            <input type="number" step="0.1" id="log-weight" required>
+                        </div>
+                        <button type="submit" class="btn-primary">Save Entry</button>
+                    </form>
+                </div>
+                <div class="history-list" id="weight-history">
+                    <h3>Recent History</h3>
+                    <!-- List items will be injected here -->
+                </div>
+            </section>
+
+            <section id="progress-tab" class="tab-page hidden">
+                <div class="card">
+                    <h2>Weight Trends</h2>
+                    <div class="chart-container">
+                        <canvas id="weight-chart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section id="walk-tab" class="tab-page hidden">
+                <div class="walk-tracker">
+                    <div class="tracker-display">
+                        <div class="main-stat">
+                            <span id="walk-distance">0.00</span>
+                            <small>km</small>
+                        </div>
+                        <div class="track-row">
+                            <div class="sub-stat">
+                                <span id="walk-timer">00:00:00</span>
+                                <small>Time</small>
+                            </div>
+                            <div class="sub-stat">
+                                <span id="walk-steps">0</span>
+                                <small>Steps (est.)</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tracker-controls">
+                        <button id="start-walk" class="btn-round btn-success"><i data-lucide="play"></i></button>
+                        <button id="stop-walk" class="btn-round btn-danger hidden"><i data-lucide="square"></i></button>
+                    </div>
+                </div>
+
+                <div class="walk-stats-container">
+                    <div class="card">
+                        <h3>Activity Summary</h3>
+                        <div class="stats-summary-grid">
+                            <div class="summary-item">
+                                <span class="label">Today</span>
+                                <span class="value" id="stats-today">0 km</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="label">This Week</span>
+                                <span class="value" id="stats-week">0 km</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="label">This Month</span>
+                                <span class="value" id="stats-month">0 km</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>Walking Forecast</h3>
+                        <p class="subtext">Projected distance based on your recent activity.</p>
+                        <div class="chart-container mini-chart">
+                            <canvas id="walk-forecast-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <nav class="tab-bar">
+            <button class="tab-btn active" data-tab="dashboard">
+                <i data-lucide="layout-dashboard"></i>
+                <span>Home</span>
+            </button>
+            <button class="tab-btn" data-tab="log">
+                <i data-lucide="plus-circle"></i>
+                <span>Log</span>
+            </button>
+            <button class="tab-btn" data-tab="progress">
+                <i data-lucide="trending-up"></i>
+                <span>Trends</span>
+            </button>
+            <button class="tab-btn" data-tab="walk">
+                <i data-lucide="map"></i>
+                <span>Walk</span>
+            </button>
+        </nav>
+    </div>
+    <script src="app.js"></script>
+</body>
+
+</html>

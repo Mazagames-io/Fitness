@@ -1,0 +1,15 @@
+{
+  "name": "FitTrack",
+  "short_name": "FitTrack",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#10b981",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3012/3012411.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
