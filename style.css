@@ -11,6 +11,16 @@
     --white: #ffffff;
     --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --radius: 16px;
+    --border: #e2e8f0;
+}
+
+[data-theme="dark"] {
+    --bg: #0f172a;
+    --white: #1e293b;
+    --text: #f8fafc;
+    --text-light: #94a3b8;
+    --border: #334155;
+    --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
 }
 
 * {
@@ -27,6 +37,7 @@ body {
     line-height: 1.5;
     height: 100vh;
     overflow: hidden;
+    transition: background-color 0.3s, color 0.3s;
 }
 
 #app {
@@ -42,10 +53,15 @@ body {
 header {
     padding: 24px 20px 20px;
     background: var(--white);
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+
+.header-actions {
+    display: flex;
+    gap: 8px;
 }
 
 .btn-icon {
@@ -56,10 +72,17 @@ header {
     padding: 8px;
     border-radius: 50%;
     transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-icon:hover {
-    background: #f1f5f9;
+    background: var(--bg);
+}
+
+.btn-icon.danger {
+    color: var(--danger);
 }
 
 header h1 {
@@ -77,14 +100,12 @@ main {
     overflow-y: auto;
     padding: 20px;
     padding-bottom: 100px;
-    /* Space for tab bar */
 }
 
 .hidden {
     display: none !important;
 }
 
-/* Modal / Onboarding */
 .modal {
     position: fixed;
     top: 0;
@@ -108,7 +129,8 @@ main {
     box-shadow: var(--card-shadow);
 }
 
-.modal-content h1 {
+.modal-content h1,
+.modal-content h2 {
     margin-bottom: 8px;
     font-size: 1.5rem;
 }
@@ -118,7 +140,34 @@ main {
     color: var(--text-light);
 }
 
-/* Forms */
+.modal-footer {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.btn-secondary {
+    flex: 1;
+    padding: 12px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.btn-danger-solid {
+    flex: 1.5;
+    background: var(--danger) !important;
+    color: white !important;
+}
+
+.btn-danger-solid:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 .form-group {
     margin-bottom: 16px;
 }
@@ -135,7 +184,9 @@ input,
 select {
     width: 100%;
     padding: 12px 16px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border);
+    background: var(--white);
+    color: var(--text);
     border-radius: 12px;
     font-size: 1rem;
     font-family: inherit;
@@ -165,7 +216,6 @@ select:focus {
     transform: scale(0.98);
 }
 
-/* Cards */
 .card,
 .stat-card,
 .goal-card,
@@ -177,7 +227,6 @@ select:focus {
     margin-bottom: 20px;
 }
 
-/* Dashboard Stats */
 .stats-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -220,10 +269,9 @@ select:focus {
     font-weight: 700;
 }
 
-/* Goal Progress */
 .progress-bar-container {
     height: 12px;
-    background: #e2e8f0;
+    background: var(--bg);
     border-radius: 6px;
     margin: 16px 0 8px;
     overflow: hidden;
@@ -236,7 +284,6 @@ select:focus {
     transition: width 0.5s ease;
 }
 
-/* Tab Bar */
 .tab-bar {
     position: absolute;
     bottom: 0;
@@ -245,7 +292,7 @@ select:focus {
     display: flex;
     justify-content: space-around;
     padding: 12px 0;
-    border-top: 1px solid #e2e8f0;
+    border-top: 1px solid var(--border);
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.02);
 }
 
@@ -272,7 +319,6 @@ select:focus {
     color: var(--primary);
 }
 
-/* Walking Tracker */
 .walk-tracker {
     display: flex;
     flex-direction: column;
@@ -364,7 +410,7 @@ select:focus {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 8px;
-    border: 1px solid #f1f5f9;
+    border: 1px solid var(--border);
 }
 
 .history-item .date {
@@ -383,6 +429,10 @@ select:focus {
 .health-tip-card {
     border-left: 4px solid var(--primary);
     background: linear-gradient(to right, #ffffff, #f0fdf4);
+}
+
+[data-theme="dark"] .health-tip-card {
+    background: linear-gradient(to right, #1e293b, #064e3b);
 }
 
 .health-tip-card h3 {

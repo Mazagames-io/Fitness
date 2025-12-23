@@ -65,8 +65,29 @@
                 <h1 id="user-greeting">Hi, User</h1>
                 <p id="today-date"></p>
             </div>
-            <button id="reset-data" class="btn-icon" title="Reset Data"><i data-lucide="refresh-ccw"></i></button>
+            <div class="header-actions">
+                <button id="theme-toggle" class="btn-icon" title="Toggle Dark Mode"><i data-lucide="moon"></i></button>
+                <button id="reset-data" class="btn-icon danger" title="Reset Data"><i
+                        data-lucide="refresh-ccw"></i></button>
+            </div>
         </header>
+
+        <!-- Custom Reset Modal -->
+        <div id="reset-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>Reset Application?</h2>
+                <p>This will permanently delete all your weight logs and activity history. To confirm, please type
+                    <strong>DELETE</strong> below.
+                </p>
+                <div class="form-group">
+                    <input type="text" id="reset-confirm-input" placeholder="Type DELETE here">
+                </div>
+                <div class="modal-footer">
+                    <button id="cancel-reset" class="btn-secondary">Cancel</button>
+                    <button id="confirm-reset-btn" class="btn-primary btn-danger-solid" disabled>Erase All Data</button>
+                </div>
+            </div>
+        </div>
 
         <main id="tab-content">
             <!-- Tabs will be rendered here -->
