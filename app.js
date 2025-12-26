@@ -347,10 +347,20 @@ const handleMotion = (event) => {
     if (delta > AUTO_SENSITIVITY && !isStepInProgress && (now - lastStepTime) > STEP_COOLDOWN) {
         totalSteps++;
         isStepInProgress = true;
+        
+        // Calculate cadence (time since last step) to estimate speed
+        const timeSinceLastStep = now - lastStepTime;
         lastStepTime = now;
 
-        // Sensor distance is always used as a fallback or for indoor movement
-        const strideLength = (state.user?.height || 170) * 0.415 / 100; // in meters
+        // Dynamic Stride Estimation
+        // Faster cadence = longer stride
+        let strideRatio = 0.415; // Default (Standard)
+        if (timeSinceLastStep < 500) strideRatio = 0.46;      // Fast Walk (> 2 steps/sec)
+        else if (timeSinceLastStep < 600) strideRatio = 0.44; // Brisk Walk
+        else if (timeSinceLastStep > 1000) strideRatio = 0.35; // Very Slow/Intermittent
+
+        // Fallback or indoor movement
+        const strideLength = (state.user?.height || 170) * strideRatio / 100; // in meters
         const stepDist = strideLength / 1000;
 
         // If GPS is not active or not outdoor, use steps for total distance
